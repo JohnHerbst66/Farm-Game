@@ -1,0 +1,1510 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Furrow &amp; Ledger</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500..800&family=Space+Grotesk:wght@400;500;600;700&display=swap');
+
+  :root{
+    --soil-900:#241a12;
+    --soil-700:#3d2c1d;
+    --soil-500:#6b4a30;
+    --wheat-300:#e8d9b5;
+    --wheat-100:#f6efdc;
+    --moss-600:#4a6b4d;
+    --moss-400:#6f9470;
+    --rust-500:#b5602f;
+    --rust-600:#9a4d22;
+    --sky-400:#8fb4c2;
+    --gold-500:#c99a2e;
+    --paper:#fbf6ea;
+    --ink:#241a12;
+    --danger:#9a3324;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    font-family:'Space Grotesk', sans-serif;
+    background:var(--soil-900);
+    color:var(--ink);
+    min-height:100vh;
+    background-image:
+      radial-gradient(circle at 20% 20%, rgba(255,255,255,0.03) 0, transparent 40%),
+      radial-gradient(circle at 80% 70%, rgba(255,255,255,0.025) 0, transparent 40%);
+  }
+  h1,h2,h3{
+    font-family:'Fraunces', serif;
+    margin:0;
+    font-weight:700;
+  }
+  .app{
+    max-width:920px;
+    margin:0 auto;
+    min-height:100vh;
+    background:var(--paper);
+    display:flex;
+    flex-direction:column;
+    box-shadow:0 0 60px rgba(0,0,0,0.4);
+  }
+
+  /* HEADER */
+  .topbar{
+    background:var(--soil-700);
+    color:var(--wheat-100);
+    padding:14px 20px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    flex-wrap:wrap;
+    gap:10px;
+    border-bottom:4px solid var(--soil-900);
+  }
+  .brand{
+    display:flex;
+    align-items:baseline;
+    gap:10px;
+  }
+  .brand h1{
+    font-size:1.5rem;
+    letter-spacing:0.5px;
+  }
+  .brand .tag{
+    font-size:0.65rem;
+    text-transform:uppercase;
+    letter-spacing:2px;
+    color:var(--wheat-300);
+    opacity:0.7;
+    font-family:'Space Grotesk';
+  }
+  .stats{
+    display:flex;
+    gap:18px;
+    font-size:0.9rem;
+    align-items:center;
+  }
+  .stat{
+    display:flex;
+    flex-direction:column;
+    align-items:flex-end;
+    line-height:1.1;
+  }
+  .stat .v{
+    font-weight:700;
+    font-size:1.05rem;
+    color:var(--gold-500);
+  }
+  .stat .l{
+    font-size:0.62rem;
+    text-transform:uppercase;
+    letter-spacing:1.5px;
+    color:var(--wheat-300);
+    opacity:0.75;
+  }
+
+  /* NAV */
+  nav{
+    display:flex;
+    background:var(--soil-900);
+    border-bottom:3px solid var(--rust-600);
+  }
+  nav button{
+    flex:1;
+    background:none;
+    border:none;
+    color:var(--wheat-300);
+    font-family:'Fraunces', serif;
+    font-size:1rem;
+    font-weight:600;
+    padding:13px 8px;
+    cursor:pointer;
+    letter-spacing:0.5px;
+    border-bottom:3px solid transparent;
+    margin-bottom:-3px;
+    transition:background 0.15s, color 0.15s;
+  }
+  nav button:hover{ background:rgba(255,255,255,0.04); }
+  nav button.active{
+    color:var(--wheat-100);
+    border-bottom:3px solid var(--gold-500);
+    background:rgba(201,154,46,0.08);
+  }
+
+  main{
+    flex:1;
+    padding:20px;
+  }
+  .page{ display:none; }
+  .page.active{ display:block; animation:fadein 0.25s ease; }
+  @keyframes fadein{ from{opacity:0; transform:translateY(4px);} to{opacity:1; transform:none;} }
+
+  /* PLOTS */
+  .farm-layout{
+    padding-right:48px;
+  }
+  .plots-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fill, minmax(160px,1fr));
+    gap:14px;
+    margin-bottom:24px;
+  }
+  .plot{
+    background:var(--wheat-100);
+    border:2px solid var(--soil-500);
+    border-radius:6px;
+    padding:12px;
+    position:relative;
+    min-height:170px;
+    display:flex;
+    flex-direction:column;
+    justify-content:space-between;
+  }
+  .plot.empty{
+    background:repeating-linear-gradient(45deg, #e3d7b8, #e3d7b8 10px, #dccfa9 10px, #dccfa9 20px);
+    align-items:center;
+    justify-content:center;
+    text-align:center;
+    color:var(--soil-500);
+  }
+  .plot.locked{
+    background:var(--soil-700);
+    color:var(--wheat-300);
+    align-items:center;
+    justify-content:center;
+    text-align:center;
+    opacity:0.85;
+  }
+  .plot-stage{
+    font-size:0.62rem;
+    text-transform:uppercase;
+    letter-spacing:1.5px;
+    font-weight:700;
+    color:var(--soil-500);
+  }
+  .plot-crop-name{
+    font-family:'Fraunces', serif;
+    font-size:1.1rem;
+    margin:2px 0 6px;
+  }
+  .plot-emoji{ font-size:2rem; line-height:1; margin:4px 0; }
+  .progress-bar{
+    height:10px;
+    background:var(--soil-700);
+    border-radius:5px;
+    overflow:hidden;
+    margin:6px 0;
+  }
+  .progress-fill{
+    height:100%;
+    background:var(--moss-600);
+    transition:width 0.3s linear;
+  }
+  .progress-fill.danger{ background:var(--danger); }
+  .progress-fill.ready{ background:var(--gold-500); }
+  .plot-time{
+    font-size:0.72rem;
+    color:var(--soil-700);
+    font-weight:600;
+  }
+  .plot-time.urgent{ color:var(--danger); font-weight:700; }
+  .plot-btn{
+    margin-top:8px;
+    border:none;
+    border-radius:4px;
+    padding:8px 10px;
+    font-family:'Space Grotesk';
+    font-weight:600;
+    font-size:0.82rem;
+    cursor:pointer;
+    color:#fff;
+  }
+  .plot-btn.plow{ background:var(--soil-500); }
+  .plot-btn.plant{ background:var(--moss-600); }
+  .plot-btn.harvest{ background:var(--gold-500); color:var(--soil-900); }
+  .plot-btn:disabled{ opacity:0.5; cursor:not-allowed; }
+  .plot-btn:hover:not(:disabled){ filter:brightness(1.08); }
+
+  .seed-panel{
+    position:fixed;
+    top:0;
+    bottom:0;
+    width:40px;
+    background:var(--wheat-100);
+    border-left:2px solid var(--soil-500);
+    padding:10px 0;
+    display:none;
+    flex-direction:column;
+    align-items:center;
+    gap:10px;
+    overflow-y:auto;
+    z-index:50;
+  }
+  .seed-panel.visible{ display:flex; }
+
+  .seed-card{
+    width:32px;
+    height:32px;
+    border-radius:6px;
+    background:var(--wheat-300);
+    border:1px solid var(--soil-500);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:1.1rem;
+    cursor:grab;
+    user-select:none;
+    touch-action:none;
+    position:relative;
+    flex-shrink:0;
+  }
+  .seed-card:active{ cursor:grabbing; }
+  .seed-card:hover{ background:#dccfa9; }
+  .seed-card.unaffordable{ opacity:0.4; cursor:not-allowed; }
+  .seed-card .sc-name, .seed-card .sc-cost{ display:none; }
+  .seed-card.dragging{ opacity:0.5; }
+  .seed-panel-empty{
+    font-size:0.6rem;
+    color:var(--soil-500);
+    font-style:italic;
+    text-align:center;
+    padding:0 4px;
+  }
+
+  /* Tooltip shown on hover/tap of a seed icon */
+  .seed-tooltip{
+    position:fixed;
+    background:var(--soil-900);
+    color:var(--wheat-100);
+    padding:6px 10px;
+    border-radius:5px;
+    font-size:0.75rem;
+    white-space:nowrap;
+    pointer-events:none;
+    z-index:1600;
+    display:none;
+    box-shadow:0 4px 10px rgba(0,0,0,0.3);
+  }
+  .seed-tooltip.show{ display:block; }
+  .seed-tooltip .tt-cost{ color:var(--gold-500); font-weight:700; margin-left:6px; }
+
+  .plot.drag-over{
+    outline:3px dashed var(--gold-500);
+    outline-offset:-3px;
+    background:#fdf2d8;
+  }
+  .plot.drag-reject{
+    outline:3px dashed var(--danger);
+    outline-offset:-3px;
+  }
+
+  /* SECTION HEADERS */
+  .section-title{
+    font-size:1.3rem;
+    margin-bottom:4px;
+    color:var(--soil-900);
+    border-bottom:2px solid var(--rust-500);
+    padding-bottom:6px;
+    display:flex;
+    justify-content:space-between;
+    align-items:baseline;
+  }
+  .section-sub{
+    font-size:0.8rem;
+    color:var(--soil-500);
+    margin-bottom:14px;
+  }
+
+  /* SHOP */
+  .shop-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fill, minmax(220px,1fr));
+    gap:14px;
+  }
+  .shop-card{
+    background:var(--wheat-100);
+    border:2px solid var(--soil-500);
+    border-radius:6px;
+    padding:14px;
+    display:flex;
+    flex-direction:column;
+    gap:6px;
+  }
+  .shop-card h3{ font-size:1.05rem; }
+  .shop-card .desc{ font-size:0.8rem; color:var(--soil-700); flex:1; }
+  .shop-card .price{ font-weight:700; color:var(--rust-600); }
+  .shop-card button{
+    background:var(--moss-600);
+    color:#fff;
+    border:none;
+    border-radius:4px;
+    padding:9px;
+    font-weight:600;
+    cursor:pointer;
+    font-family:'Space Grotesk';
+  }
+  .shop-card button:disabled{ background:var(--soil-500); opacity:0.6; cursor:not-allowed; }
+  .owned-tag{
+    background:var(--moss-400);
+    color:#fff;
+    font-size:0.65rem;
+    text-transform:uppercase;
+    letter-spacing:1px;
+    padding:3px 7px;
+    border-radius:3px;
+    align-self:flex-start;
+  }
+
+  .market-table{
+    width:100%;
+    border-collapse:collapse;
+    margin-top:8px;
+    font-size:0.88rem;
+  }
+  .market-table th, .market-table td{
+    text-align:left;
+    padding:8px 10px;
+    border-bottom:1px solid var(--wheat-300);
+  }
+  .market-table th{
+    text-transform:uppercase;
+    font-size:0.68rem;
+    letter-spacing:1px;
+    color:var(--soil-500);
+  }
+  .market-table button{
+    background:var(--rust-500);
+    color:#fff;
+    border:none;
+    border-radius:4px;
+    padding:6px 12px;
+    cursor:pointer;
+    font-weight:600;
+    font-size:0.8rem;
+  }
+  .market-table button:disabled{ background:var(--soil-500); opacity:0.5; cursor:not-allowed; }
+  .price-up{ color:var(--moss-600); font-weight:700; }
+  .price-down{ color:var(--danger); font-weight:700; }
+  .market-timer{
+    font-size:0.75rem;
+    color:var(--soil-500);
+    margin-bottom:6px;
+  }
+
+  /* INFO / LEVELS */
+  .level-list{
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+  }
+  .level-row{
+    background:var(--wheat-100);
+    border:2px solid var(--soil-500);
+    border-radius:6px;
+    padding:12px 14px;
+    display:flex;
+    gap:14px;
+    align-items:center;
+  }
+  .level-row.current{ border-color:var(--gold-500); background:#fdf2d8; }
+  .level-num{
+    font-family:'Fraunces', serif;
+    font-size:1.6rem;
+    font-weight:800;
+    color:var(--soil-500);
+    min-width:46px;
+    text-align:center;
+  }
+  .level-row.current .level-num{ color:var(--gold-500); }
+  .level-info{ flex:1; font-size:0.85rem; }
+  .level-info b{ display:block; font-family:'Fraunces'; font-size:1rem; margin-bottom:2px; }
+
+  .badges-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fill, minmax(150px,1fr));
+    gap:12px;
+    margin-top:10px;
+  }
+  .badge{
+    background:var(--wheat-100);
+    border:2px solid var(--soil-500);
+    border-radius:6px;
+    padding:12px;
+    text-align:center;
+    opacity:0.35;
+    filter:grayscale(1);
+  }
+  .badge.unlocked{ opacity:1; filter:none; border-color:var(--gold-500); background:#fdf2d8; }
+  .badge .ic{ font-size:1.8rem; }
+  .badge .nm{ font-weight:700; font-size:0.82rem; margin-top:4px; }
+  .badge .ds{ font-size:0.68rem; color:var(--soil-700); margin-top:2px; }
+
+  /* TOASTS */
+  #toasts{
+    position:fixed;
+    bottom:16px;
+    left:50%;
+    transform:translateX(-50%);
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+    z-index:999;
+    width:90%;
+    max-width:420px;
+    align-items:center;
+  }
+  .toast{
+    background:var(--soil-900);
+    color:var(--wheat-100);
+    padding:10px 16px;
+    border-radius:6px;
+    font-size:0.85rem;
+    box-shadow:0 4px 14px rgba(0,0,0,0.3);
+    border-left:4px solid var(--gold-500);
+    animation:toastin 0.25s ease;
+    width:100%;
+    text-align:center;
+  }
+  .toast.bad{ border-left-color:var(--danger); }
+  .toast.good{ border-left-color:var(--moss-400); }
+  @keyframes toastin{ from{opacity:0; transform:translateY(10px);} to{opacity:1; transform:none;} }
+
+  /* MODAL */
+  .modal-overlay{
+    position:fixed; inset:0;
+    background:rgba(20,12,6,0.75);
+    display:none;
+    align-items:center;
+    justify-content:center;
+    z-index:1000;
+    padding:20px;
+  }
+  .modal-overlay.show{ display:flex; }
+  .modal-box{
+    background:var(--paper);
+    border:3px solid var(--rust-600);
+    border-radius:8px;
+    padding:28px;
+    max-width:420px;
+    text-align:center;
+  }
+  .modal-box h2{ color:var(--danger); margin-bottom:8px; font-size:1.6rem; }
+  .modal-box p{ font-size:0.9rem; color:var(--soil-700); margin-bottom:18px; }
+  .modal-box button{
+    background:var(--rust-500);
+    color:#fff;
+    border:none;
+    padding:11px 22px;
+    border-radius:5px;
+    font-weight:700;
+    cursor:pointer;
+    font-family:'Space Grotesk';
+    font-size:0.95rem;
+  }
+
+  .footer-note{
+    text-align:center;
+    font-size:0.7rem;
+    color:var(--soil-500);
+    padding:10px;
+    opacity:0.7;
+  }
+
+  @media (max-width:560px){
+    .stats{ gap:10px; }
+    .stat .v{ font-size:0.92rem; }
+    nav button{ font-size:0.82rem; padding:11px 4px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <div class="topbar">
+    <div class="brand">
+      <h1>🌾 Furrow &amp; Ledger</h1>
+      <span class="tag">a small farm</span>
+    </div>
+    <div class="stats">
+      <div class="stat"><span class="v" id="stat-gold">0</span><span class="l">Gold</span></div>
+      <div class="stat"><span class="v" id="stat-level">1</span><span class="l">Level</span></div>
+      <div class="stat"><span class="v" id="stat-xp">0/0</span><span class="l">XP</span></div>
+    </div>
+  </div>
+
+  <nav>
+    <button class="nav-btn active" data-page="farm">Farm</button>
+    <button class="nav-btn" data-page="shop">Shop &amp; Market</button>
+    <button class="nav-btn" data-page="info">Almanac</button>
+  </nav>
+
+  <main>
+    <!-- FARM PAGE -->
+    <div class="page active" id="page-farm">
+      <div class="section-title">
+        <span>Your Plots</span>
+        <span class="section-sub" style="margin:0;" id="plot-count-label"></span>
+      </div>
+      <p class="section-sub">Plow a plot, then drag a seed from the panel onto it. Harvest before the crop withers — crops left unharvested for more than 2 hours die.</p>
+
+      <div class="farm-layout">
+        <div class="plots-grid" id="plots-grid"></div>
+      </div>
+
+      <aside class="seed-panel" id="seed-panel">
+        <div id="seed-panel-list"></div>
+      </aside>
+
+      <div class="seed-tooltip" id="seed-tooltip"></div>
+
+      <div class="section-title"><span>Storehouse</span></div>
+      <p class="section-sub">Crops you've harvested, ready to sell in the Market.</p>
+      <div id="inventory-list" style="display:flex; flex-wrap:wrap; gap:10px;"></div>
+    </div>
+
+    <!-- SHOP PAGE -->
+    <div class="page" id="page-shop">
+      <div class="section-title"><span>Market</span></div>
+      <div class="market-timer" id="market-timer">Prices update every 5 minutes.</div>
+      <table class="market-table">
+        <thead>
+          <tr><th>Crop</th><th>Base price</th><th>Current price</th><th>You have</th><th></th></tr>
+        </thead>
+        <tbody id="market-body"></tbody>
+      </table>
+
+      <div class="section-title" style="margin-top:28px;"><span>Seed Stand</span></div>
+      <p class="section-sub">Buy seeds here, or pick them directly when planting on the Farm page.</p>
+      <div class="shop-grid" id="seed-shop-grid"></div>
+
+      <div class="section-title" style="margin-top:28px;"><span>Tool Shed</span></div>
+      <p class="section-sub">Tools cut down plowing, planting, or harvest time across all your plots.</p>
+      <div class="shop-grid" id="tool-shop-grid"></div>
+    </div>
+
+    <!-- INFO PAGE -->
+    <div class="page" id="page-info">
+      <div class="section-title"><span>Almanac</span></div>
+      <p class="section-sub">What you unlock as your farm grows.</p>
+      <div class="level-list" id="level-list"></div>
+
+      <div class="section-title" style="margin-top:28px;"><span>Badges</span></div>
+      <p class="section-sub">Earned through honest farm work.</p>
+      <div class="badges-grid" id="badges-grid"></div>
+    </div>
+  </main>
+
+  <div class="footer-note">Progress saves automatically to this browser.</div>
+</div>
+
+<div id="toasts"></div>
+
+<div class="modal-overlay" id="bankrupt-modal">
+  <div class="modal-box">
+    <h2>Your farm went bankrupt</h2>
+    <p>No crops in the ground, none in the storehouse, and not a coin of gold left. The bank has called in the land.</p>
+    <button id="restart-btn">Start a new farm</button>
+  </div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  /* ---------- CONFIG ---------- */
+
+  const SAVE_KEY = "furrowledger_save_v1";
+
+  // Crop definitions. Times in seconds (kept short-ish for playability but respecting "more expensive = more time").
+  // plowSec/plantSec/growSec are BASE times before tool reductions.
+  const CROPS = {
+    turnip:   { name:"Turnip",   emoji:"🥔", buy:6,  sell:5,  plow:20,  plant:10, grow:60,   seedCost:3  },
+    carrot:   { name:"Carrot",   emoji:"🥕", buy:12, sell:10, plow:30,  plant:15, grow:150,  seedCost:6  },
+    corn:     { name:"Corn",     emoji:"🌽", buy:22, sell:18, plow:45,  plant:20, grow:330,  seedCost:11 },
+    pumpkin:  { name:"Pumpkin",  emoji:"🎃", buy:40, sell:33, plow:60,  plant:30, grow:600,  seedCost:20 },
+    grape:    { name:"Grape",    emoji:"🍇", buy:65, sell:54, plow:75,  plant:40, grow:900,  seedCost:32 },
+    truffle:  { name:"Truffle",  emoji:"🍄", buy:110,sell:92, plow:90,  plant:50, grow:1500, seedCost:55 },
+  };
+  const CROP_KEYS = Object.keys(CROPS);
+  const DEATH_SEC = 2 * 60 * 60; // 2 hours: time after crop is READY before it dies if not harvested
+
+  // Tools: each reduces one phase's duration by a percentage, applied multiplicatively, stacking with owned tools.
+  const TOOLS = [
+    { id:"hoe_iron",      name:"Iron Hoe",         desc:"Cuts plowing time by 25%.",        cost:80,   phase:"plow",  reduction:0.25 },
+    { id:"hoe_steel",     name:"Steel Hoe",        desc:"Cuts plowing time by a further 25%.", cost:240,  phase:"plow",  reduction:0.25 },
+    { id:"seed_pouch",    name:"Seed Pouch",       desc:"Cuts planting time by 25%.",        cost:80,   phase:"plant", reduction:0.25 },
+    { id:"seed_drill",    name:"Seed Drill",       desc:"Cuts planting time by a further 30%.", cost:260,  phase:"plant", reduction:0.30 },
+    { id:"compost",       name:"Rich Compost",     desc:"Cuts growing time by 15%.",         cost:150,  phase:"grow",  reduction:0.15 },
+    { id:"irrigation",    name:"Irrigation Lines", desc:"Cuts growing time by a further 20%.", cost:400,  phase:"grow",  reduction:0.20 },
+    { id:"greenhouse",    name:"Greenhouse Panels",desc:"Cuts growing time by a further 15%.", cost:900,  phase:"grow",  reduction:0.15 },
+  ];
+
+  // Levels: xp required (cumulative thresholds), and plots unlocked at that level.
+  const LEVELS = [
+    { level:1, xpToNext:50,  plots:1, reward:"Starting plot of land." },
+    { level:2, xpToNext:120, plots:2, reward:"A second plot, and Turnip/Carrot seeds in the stand." },
+    { level:3, xpToNext:220, plots:2, reward:"Corn seeds unlocked at the stand." },
+    { level:4, xpToNext:350, plots:3, reward:"A third plot." },
+    { level:5, xpToNext:500, plots:3, reward:"Pumpkin seeds unlocked." },
+    { level:6, xpToNext:700, plots:4, reward:"A fourth plot." },
+    { level:7, xpToNext:950, plots:4, reward:"Grape seeds unlocked." },
+    { level:8, xpToNext:1300,plots:5, reward:"A fifth plot." },
+    { level:9, xpToNext:1700,plots:5, reward:"Truffle seeds unlocked — the rarest crop." },
+    { level:10,xpToNext:Infinity, plots:6, reward:"A sixth plot. You've mastered the almanac." },
+  ];
+
+  const BADGES = [
+    { id:"first_harvest", icon:"🌱", name:"First Harvest", desc:"Harvest your first crop.", check:s=>s.stats.totalHarvested>=1 },
+    { id:"ten_harvests",  icon:"🧺", name:"Steady Hands",  desc:"Harvest 10 crops.",        check:s=>s.stats.totalHarvested>=10 },
+    { id:"fifty_harvests",icon:"🚜", name:"Veteran Farmer",desc:"Harvest 50 crops.",        check:s=>s.stats.totalHarvested>=50 },
+    { id:"first_sale",    icon:"💰", name:"First Sale",    desc:"Sell a crop at market.",   check:s=>s.stats.totalSold>=1 },
+    { id:"rich_100",      icon:"🪙", name:"Pocket Change",  desc:"Hold 100 gold at once.",   check:s=>s.gold>=100 },
+    { id:"rich_1000",     icon:"💎", name:"Landowner",      desc:"Hold 1,000 gold at once.", check:s=>s.gold>=1000 },
+    { id:"first_death",   icon:"🥀", name:"Hard Lesson",    desc:"Lose a crop to neglect (it happens).", check:s=>s.stats.totalDied>=1 },
+    { id:"level5",        icon:"⭐", name:"Established",   desc:"Reach level 5.",           check:s=>s.level>=5 },
+    { id:"level10",       icon:"🏆", name:"Master Farmer",  desc:"Reach level 10.",          check:s=>s.level>=10 },
+    { id:"all_tools",     icon:"🛠️", name:"Fully Equipped", desc:"Own every tool in the shed.", check:s=>TOOLS.every(t=>s.tools.includes(t.id)) },
+    { id:"truffle_hunter",icon:"🍄", name:"Truffle Hunter", desc:"Harvest a truffle.",       check:s=>s.stats.harvestedByCrop.truffle>=1 },
+    { id:"comeback",      icon:"🔥", name:"Comeback",       desc:"Recover from near-bankruptcy.", check:s=>s.stats.comebacks>=1 },
+  ];
+
+  const MARKET_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes
+
+  const CROP_UNLOCK_LEVEL = {turnip:1, carrot:2, corn:3, pumpkin:5, grape:7, truffle:9};
+
+  /* ---------- STATE ---------- */
+
+  let state = null;
+
+  function defaultState(){
+    const plots = [];
+    plots.push(emptyPlot());
+    return {
+      gold: 40,
+      level: 1,
+      xp: 0,
+      plotsUnlocked: 1,
+      plots: plots,
+      inventory: {}, // cropKey -> count
+      tools: [],
+      seedsBought: {}, // cropKey -> count owned as seeds (optional pre-buy)
+      market: {}, // cropKey -> current sell price
+      marketLastUpdate: Date.now(),
+      badgesUnlocked: [],
+      stats: {
+        totalHarvested:0, totalSold:0, totalDied:0, comebacks:0,
+        harvestedByCrop:{}
+      },
+      wasNearBankrupt:false,
+      bankrupt:false
+    };
+  }
+
+  function emptyPlot(){
+    return { status:"empty", crop:null, phaseEndAt:null, phaseStartAt:null, deathAt:null };
+  }
+
+  function load(){
+    try{
+      const raw = localStorage.getItem(SAVE_KEY);
+      if(raw){
+        const parsed = JSON.parse(raw);
+        state = parsed;
+        // backfill any missing fields for forward-compat
+        const d = defaultState();
+        for(const k in d){ if(!(k in state)) state[k] = d[k]; }
+        if(!state.stats) state.stats = d.stats;
+        if(!state.stats.harvestedByCrop) state.stats.harvestedByCrop = {};
+        if(!state.market || Object.keys(state.market).length===0) initMarket();
+      } else {
+        state = defaultState();
+        initMarket();
+      }
+    }catch(e){
+      state = defaultState();
+      initMarket();
+    }
+  }
+
+  function save(){
+    localStorage.setItem(SAVE_KEY, JSON.stringify(state));
+  }
+
+  function initMarket(){
+    state.market = {};
+    CROP_KEYS.forEach(k=>{
+      state.market[k] = randomMarketPrice(k);
+    });
+    state.marketLastUpdate = Date.now();
+  }
+
+  // Selling price fluctuates around (but never much below) the crop's solid sell price.
+  // Range: -8% to +12% of base sell price, occasionally dipping to -15% ("a little lower" sometimes).
+  function randomMarketPrice(cropKey){
+    const base = CROPS[cropKey].sell;
+    const roll = Math.random();
+    let mult;
+    if(roll < 0.12){
+      mult = 0.85 + Math.random()*0.07; // occasional small dip: 85%-92%
+    } else {
+      mult = 0.94 + Math.random()*0.18; // normal range: 94%-112%
+    }
+    return Math.max(1, Math.round(base * mult));
+  }
+
+  function maybeUpdateMarket(){
+    const now = Date.now();
+    if(now - state.marketLastUpdate >= MARKET_INTERVAL_MS){
+      CROP_KEYS.forEach(k=>{ state.market[k] = randomMarketPrice(k); });
+      state.marketLastUpdate = now;
+      save();
+    }
+  }
+
+  /* ---------- LEVEL HELPERS ---------- */
+
+  function levelInfo(lvl){
+    return LEVELS.find(l=>l.level===lvl) || LEVELS[LEVELS.length-1];
+  }
+  function xpToNext(){
+    return levelInfo(state.level).xpToNext;
+  }
+  function unlockedCrops(){
+    // crops unlock progressively by level, matching LEVELS rewards
+    const order = ["turnip","carrot","corn","pumpkin","grape","truffle"];
+    return order.filter(k=>state.level>=CROP_UNLOCK_LEVEL[k]);
+  }
+
+  function gainXP(amount){
+    state.xp += amount;
+    while(state.xp >= xpToNext() && levelInfo(state.level).level < LEVELS[LEVELS.length-1].level){
+      state.xp -= xpToNext();
+      state.level += 1;
+      const li = levelInfo(state.level);
+      state.plotsUnlocked = Math.max(state.plotsUnlocked, li.plots);
+      while(state.plots.length < state.plotsUnlocked){
+        state.plots.push(emptyPlot());
+      }
+      toast(`Level up! You're now level ${state.level}. ${li.reward}`, "good");
+    }
+  }
+
+  /* ---------- TOOL / TIME HELPERS ---------- */
+
+  function phaseDuration(cropKey, phase){
+    const base = CROPS[cropKey][phase]; // seconds
+    let mult = 1;
+    TOOLS.filter(t=>t.phase===phase && state.tools.includes(t.id))
+      .forEach(t=>{ mult *= (1 - t.reduction); });
+    return Math.max(3, Math.round(base * mult));
+  }
+
+  function fmtTime(sec){
+    sec = Math.max(0, Math.round(sec));
+    const h = Math.floor(sec/3600);
+    const m = Math.floor((sec%3600)/60);
+    const s = sec%60;
+    if(h>0) return `${h}h ${m}m ${s}s`;
+    if(m>0) return `${m}m ${s}s`;
+    return `${s}s`;
+  }
+
+  /* ---------- TOAST ---------- */
+
+  function toast(msg, kind){
+    const el = document.createElement("div");
+    el.className = "toast" + (kind ? " "+kind : "");
+    el.textContent = msg;
+    document.getElementById("toasts").appendChild(el);
+    setTimeout(()=>{ el.remove(); }, 4200);
+  }
+
+  /* ---------- PLOT ACTIONS ---------- */
+
+  function plowPlot(idx){
+    const p = state.plots[idx];
+    if(p.status !== "empty") return;
+    const now = Date.now();
+    p.status = "plowing";
+    p.phaseStartAt = now;
+    p.phaseEndAt = now + 6000; // base plow visual duration placeholder, real crop-specific time set on plant... 
+    // Plowing here is generic (not crop-specific) — use a flat small base reduced by hoe tools.
+    let mult = 1;
+    TOOLS.filter(t=>t.phase==="plow" && state.tools.includes(t.id)).forEach(t=>{ mult *= (1-t.reduction); });
+    const dur = Math.max(3, Math.round(15 * mult));
+    p.phaseEndAt = now + dur*1000;
+    save();
+    render();
+  }
+
+  function plantSeed(idx, cropKey){
+    const p = state.plots[idx];
+    if(p.status !== "plowed") return;
+    const cost = CROPS[cropKey].seedCost;
+    if(state.gold < cost){
+      toast(`Not enough gold for ${CROPS[cropKey].name} seed (costs ${cost}g).`, "bad");
+      return;
+    }
+    state.gold -= cost;
+    const now = Date.now();
+    const plantDur = phaseDuration(cropKey, "plant");
+    p.status = "planting";
+    p.crop = cropKey;
+    p.phaseStartAt = now;
+    p.phaseEndAt = now + plantDur*1000;
+    save();
+    render();
+  }
+
+  function harvestPlot(idx){
+    const p = state.plots[idx];
+    if(p.status !== "ready") return;
+    const cropKey = p.crop;
+    state.inventory[cropKey] = (state.inventory[cropKey]||0) + 1;
+    state.stats.totalHarvested += 1;
+    state.stats.harvestedByCrop[cropKey] = (state.stats.harvestedByCrop[cropKey]||0) + 1;
+    gainXP(Math.round(CROPS[cropKey].buy * 1.3));
+    toast(`Harvested 1 ${CROPS[cropKey].name}!`, "good");
+    state.plots[idx] = emptyPlot();
+    checkBadges();
+    save();
+    render();
+  }
+
+  function clearDeadPlot(idx){
+    const p = state.plots[idx];
+    state.stats.totalDied += 1;
+    toast(`Your ${CROPS[p.crop].name} withered and died. It sat too long after ripening.`, "bad");
+    state.plots[idx] = emptyPlot();
+    checkBadges();
+    save();
+  }
+
+  /* ---------- MARKET / SELLING ---------- */
+
+  function sellCrop(cropKey){
+    const have = state.inventory[cropKey]||0;
+    if(have <= 0) return;
+    const price = state.market[cropKey];
+    state.inventory[cropKey] = have - 1;
+    state.gold += price;
+    state.stats.totalSold += 1;
+    if(state.wasNearBankrupt && state.gold > 20){
+      state.stats.comebacks += 1;
+      state.wasNearBankrupt = false;
+    }
+    toast(`Sold 1 ${CROPS[cropKey].name} for ${price}g.`, "good");
+    checkBadges();
+    checkBankruptcy();
+    save();
+    render();
+  }
+
+  function sellAll(cropKey){
+    const have = state.inventory[cropKey]||0;
+    if(have<=0) return;
+    const price = state.market[cropKey];
+    const total = have * price;
+    state.inventory[cropKey] = 0;
+    state.gold += total;
+    state.stats.totalSold += have;
+    if(state.wasNearBankrupt && state.gold > 20){
+      state.stats.comebacks += 1;
+      state.wasNearBankrupt = false;
+    }
+    toast(`Sold ${have} ${CROPS[cropKey].name} for ${total}g.`, "good");
+    checkBadges();
+    save();
+    render();
+  }
+
+  /* ---------- TOOLS / SHOP ---------- */
+
+  function buyTool(toolId){
+    const tool = TOOLS.find(t=>t.id===toolId);
+    if(!tool || state.tools.includes(toolId)) return;
+    if(state.gold < tool.cost){
+      toast(`Not enough gold for ${tool.name} (costs ${tool.cost}g).`, "bad");
+      return;
+    }
+    state.gold -= tool.cost;
+    state.tools.push(toolId);
+    toast(`Bought ${tool.name}!`, "good");
+    checkBadges();
+    save();
+    render();
+  }
+
+  /* ---------- BANKRUPTCY ---------- */
+
+  function totalInventoryCount(){
+    return Object.values(state.inventory).reduce((a,b)=>a+b,0);
+  }
+  function anyCropsGrowing(){
+    return state.plots.some(p=>p.status==="planting" || p.status==="growing" || p.status==="ready" || p.status==="dead");
+  }
+
+  function checkBankruptcy(){
+    if(state.gold <= 0 && totalInventoryCount() === 0 && !anyCropsGrowing()){
+      state.bankrupt = true;
+      save();
+      showBankruptModal();
+    } else if(state.gold <= 5){
+      state.wasNearBankrupt = true;
+    }
+  }
+
+  function showBankruptModal(){
+    document.getElementById("bankrupt-modal").classList.add("show");
+  }
+
+  function restartGame(){
+    localStorage.removeItem(SAVE_KEY);
+    state = defaultState();
+    initMarket();
+    save();
+    document.getElementById("bankrupt-modal").classList.remove("show");
+    render();
+  }
+
+  /* ---------- BADGES ---------- */
+
+  function checkBadges(){
+    BADGES.forEach(b=>{
+      if(!state.badgesUnlocked.includes(b.id) && b.check(state)){
+        state.badgesUnlocked.push(b.id);
+        toast(`🏅 Badge earned: ${b.name}!`, "good");
+      }
+    });
+  }
+
+  /* ---------- TICK (plot progression) ---------- */
+
+  function tick(){
+    const now = Date.now();
+    let changed = false;
+
+    state.plots.forEach((p, idx)=>{
+      if(p.status === "plowing" && now >= p.phaseEndAt){
+        p.status = "plowed";
+        changed = true;
+      } else if(p.status === "planting" && now >= p.phaseEndAt){
+        const growDur = phaseDuration(p.crop, "grow");
+        p.status = "growing";
+        p.phaseStartAt = now;
+        p.phaseEndAt = now + growDur*1000;
+        changed = true;
+      } else if(p.status === "growing" && now >= p.phaseEndAt){
+        p.status = "ready";
+        p.deathAt = now + DEATH_SEC*1000;
+        changed = true;
+      } else if(p.status === "ready" && now >= p.deathAt){
+        p.status = "dead";
+        changed = true;
+      }
+    });
+
+    // auto-clear dead plots after a short grace display period? We keep "dead" visible until user acknowledges.
+    if(changed) save();
+
+    maybeUpdateMarket();
+    renderTick(); // lightweight render of timers without full rebuild flicker
+  }
+
+  /* ---------- RENDER ---------- */
+
+  function render(){
+    document.getElementById("stat-gold").textContent = state.gold;
+    document.getElementById("stat-level").textContent = state.level;
+    document.getElementById("stat-xp").textContent = `${state.xp}/${xpToNext()===Infinity?"MAX":xpToNext()}`;
+
+    renderPlots();
+    renderSeedPanel();
+    renderInventory();
+    renderMarket();
+    renderSeedShop();
+    renderToolShop();
+    renderLevels();
+    renderBadges();
+  }
+
+  function renderPlots(){
+    document.getElementById("plot-count-label").textContent = `${state.plots.length} plot${state.plots.length>1?'s':''} unlocked`;
+    const grid = document.getElementById("plots-grid");
+    grid.innerHTML = "";
+
+    const totalSlots = Math.max(state.plotsUnlocked, state.plots.length);
+    const nextLevelPlots = levelInfo(Math.min(state.level+1, LEVELS[LEVELS.length-1].level)).plots;
+
+    state.plots.forEach((p, idx)=>{
+      const div = document.createElement("div");
+      div.className = "plot";
+      div.dataset.idx = idx;
+      div.dataset.status = p.status;
+      const now = Date.now();
+
+      if(p.status === "empty"){
+        div.classList.add("empty");
+        div.innerHTML = `
+          <div></div>
+          <div class="plot-emoji">⬛</div>
+          <div class="plot-stage">Empty plot</div>
+          <button class="plot-btn plow" onclick="Game.plow(${idx})">Plow</button>
+        `;
+      } else if(p.status === "plowing"){
+        const pct = clampPct(p.phaseStartAt, p.phaseEndAt, now);
+        const remain = Math.max(0,(p.phaseEndAt-now)/1000);
+        div.innerHTML = `
+          <div class="plot-stage">Plowing…</div>
+          <div class="plot-emoji">🚜</div>
+          <div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div>
+          <div class="plot-time">${fmtTime(remain)} left</div>
+        `;
+      } else if(p.status === "plowed"){
+        div.innerHTML = `
+          <div class="plot-stage">Ready to plant</div>
+          <div class="plot-emoji">🟫</div>
+          <div class="plot-time" style="margin-top:auto;">Drag a seed here</div>
+        `;
+      } else if(p.status === "planting"){
+        const c = CROPS[p.crop];
+        const pct = clampPct(p.phaseStartAt, p.phaseEndAt, now);
+        const remain = Math.max(0,(p.phaseEndAt-now)/1000);
+        div.innerHTML = `
+          <div class="plot-stage">Planting</div>
+          <div class="plot-crop-name">${c.emoji} ${c.name}</div>
+          <div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div>
+          <div class="plot-time">${fmtTime(remain)} left</div>
+        `;
+      } else if(p.status === "growing"){
+        const c = CROPS[p.crop];
+        const pct = clampPct(p.phaseStartAt, p.phaseEndAt, now);
+        const remain = Math.max(0,(p.phaseEndAt-now)/1000);
+        div.innerHTML = `
+          <div class="plot-stage">Growing</div>
+          <div class="plot-crop-name">${c.emoji} ${c.name}</div>
+          <div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div>
+          <div class="plot-time">${fmtTime(remain)} left</div>
+        `;
+      } else if(p.status === "ready"){
+        const c = CROPS[p.crop];
+        const remain = Math.max(0,(p.deathAt-now)/1000);
+        const urgent = remain < 15*60;
+        const elapsedFraction = 1 - (remain/DEATH_SEC);
+        div.innerHTML = `
+          <div class="plot-stage">Ripe! Harvest it</div>
+          <div class="plot-crop-name">${c.emoji} ${c.name}</div>
+          <div class="progress-bar"><div class="progress-fill ${urgent?'danger':'ready'}" style="width:${Math.round((1-elapsedFraction)*100)}%"></div></div>
+          <div class="plot-time ${urgent?'urgent':''}">${fmtTime(remain)} before it withers</div>
+          <button class="plot-btn harvest" onclick="Game.harvest(${idx})">Harvest</button>
+        `;
+      } else if(p.status === "dead"){
+        const c = CROPS[p.crop];
+        div.innerHTML = `
+          <div class="plot-stage">Withered 🥀</div>
+          <div class="plot-crop-name">${c.emoji} ${c.name}</div>
+          <div class="plot-time urgent">Left too long — lost.</div>
+          <button class="plot-btn plow" onclick="Game.clearDead(${idx})">Clear plot</button>
+        `;
+      }
+      grid.appendChild(div);
+    });
+
+    // locked plot previews
+    for(let i = state.plots.length; i < totalSlots; i++){
+      const div = document.createElement("div");
+      div.className = "plot locked";
+      div.innerHTML = `<div class="plot-emoji">🔒</div><div class="plot-stage">Locked</div>`;
+      grid.appendChild(div);
+    }
+    if(state.plots.length === state.plotsUnlocked && state.level < LEVELS[LEVELS.length-1].level){
+      const div = document.createElement("div");
+      div.className = "plot locked";
+      div.innerHTML = `<div class="plot-emoji">🔒</div><div class="plot-stage">Unlocks at level ${state.level+1}</div>`;
+      grid.appendChild(div);
+    }
+
+    wirePlotDropZones();
+  }
+
+  function clampPct(start, end, now){
+    if(end<=start) return 100;
+    const pct = ((now-start)/(end-start))*100;
+    return Math.min(100, Math.max(0,pct));
+  }
+
+  // Lightweight re-render for timers (rebuilds plot tiles each tick, but the seed panel is separate and never flickers)
+  function renderTick(){
+    renderPlots();
+    document.getElementById("stat-gold").textContent = state.gold;
+    document.getElementById("stat-level").textContent = state.level;
+    document.getElementById("stat-xp").textContent = `${state.xp}/${xpToNext()===Infinity?"MAX":xpToNext()}`;
+    renderMarketTimerOnly();
+  }
+
+  function renderInventory(){
+    const wrap = document.getElementById("inventory-list");
+    wrap.innerHTML = "";
+    const keys = CROP_KEYS.filter(k=>(state.inventory[k]||0) > 0);
+    if(keys.length===0){
+      wrap.innerHTML = `<div style="color:var(--soil-500); font-size:0.85rem;">Nothing in storage yet. Harvest some crops!</div>`;
+      return;
+    }
+    keys.forEach(k=>{
+      const c = CROPS[k];
+      const div = document.createElement("div");
+      div.className = "shop-card";
+      div.style.minWidth = "150px";
+      div.innerHTML = `
+        <h3>${c.emoji} ${c.name}</h3>
+        <div class="desc">You have <b>${state.inventory[k]}</b>. Market: ${state.market[k]}g each.</div>
+      `;
+      wrap.appendChild(div);
+    });
+  }
+
+  function renderMarket(){
+    const body = document.getElementById("market-body");
+    body.innerHTML = "";
+    CROP_KEYS.forEach(k=>{
+      const c = CROPS[k];
+      const have = state.inventory[k]||0;
+      const price = state.market[k];
+      const diff = price - c.sell;
+      const priceClass = diff>0 ? "price-up" : (diff<0 ? "price-down" : "");
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td>${c.emoji} ${c.name}</td>
+        <td>${c.sell}g</td>
+        <td class="${priceClass}">${price}g</td>
+        <td>${have}</td>
+        <td><button ${have<=0?'disabled':''} onclick="Game.sellAll('${k}')">Sell all</button></td>
+      `;
+      body.appendChild(tr);
+    });
+    renderMarketTimerOnly();
+  }
+
+  function renderMarketTimerOnly(){
+    const el = document.getElementById("market-timer");
+    if(!el) return;
+    const elapsed = Date.now() - state.marketLastUpdate;
+    const remain = Math.max(0, MARKET_INTERVAL_MS - elapsed);
+    el.textContent = `Prices refresh in ${fmtTime(remain/1000)}.`;
+  }
+
+  function renderSeedShop(){
+    const grid = document.getElementById("seed-shop-grid");
+    grid.innerHTML = "";
+    CROP_KEYS.forEach(k=>{
+      const c = CROPS[k];
+      const isUnlocked = state.level >= CROP_UNLOCK_LEVEL[k];
+      const div = document.createElement("div");
+      div.className = "shop-card";
+      if(isUnlocked){
+        div.innerHTML = `
+          <h3>${c.emoji} ${c.name} seed</h3>
+          <div class="desc">Plow time: ${fmtTime(phaseDuration(k,"plow"))} · Plant: ${fmtTime(phaseDuration(k,"plant"))} · Grows in: ${fmtTime(phaseDuration(k,"grow"))}<br>Sells around ${c.sell}g.</div>
+          <div class="price">${c.seedCost}g per seed</div>
+          <div class="desc" style="font-style:italic;">Drag this seed onto a plowed plot on the Farm page.</div>
+        `;
+      } else {
+        div.innerHTML = `
+          <h3>🔒 ${c.name} seed</h3>
+          <div class="desc">Unlocks at level ${CROP_UNLOCK_LEVEL[k]}.</div>
+        `;
+      }
+      grid.appendChild(div);
+    });
+  }
+
+  /* ---------- SEED PANEL (drag and drop planting) ---------- */
+
+  function renderSeedPanel(){
+    const list = document.getElementById("seed-panel-list");
+    list.innerHTML = "";
+    const unlocked = unlockedCrops();
+
+    if(unlocked.length === 0){
+      list.innerHTML = `<div class="seed-panel-empty">No seeds yet</div>`;
+      return;
+    }
+
+    unlocked.forEach(k=>{
+      const c = CROPS[k];
+      const afford = state.gold >= c.seedCost;
+      const card = document.createElement("div");
+      card.className = "seed-card" + (afford ? "" : " unaffordable");
+      card.draggable = true;
+      card.dataset.crop = k;
+      card.textContent = c.emoji;
+      card.addEventListener("dragstart", onSeedDragStart);
+      card.addEventListener("dragend", onSeedDragEnd);
+      card.addEventListener("touchstart", onSeedTouchStart, {passive:false});
+      card.addEventListener("mouseenter", onSeedHoverShow);
+      card.addEventListener("mouseleave", onSeedHoverHide);
+      list.appendChild(card);
+    });
+  }
+
+  function tooltipText(cropKey){
+    const c = CROPS[cropKey];
+    return `${c.emoji} ${c.name} <span class="tt-cost">${c.seedCost}g</span>`;
+  }
+
+  function positionTooltip(anchorEl){
+    const tip = document.getElementById("seed-tooltip");
+    const rect = anchorEl.getBoundingClientRect();
+    tip.style.top = (rect.top + rect.height/2 - tip.offsetHeight/2) + "px";
+    tip.style.left = (rect.left - tip.offsetWidth - 10) + "px";
+  }
+
+  function onSeedHoverShow(e){
+    const card = e.currentTarget;
+    const tip = document.getElementById("seed-tooltip");
+    tip.innerHTML = tooltipText(card.dataset.crop);
+    tip.classList.add("show");
+    positionTooltip(card);
+  }
+  function onSeedHoverHide(){
+    document.getElementById("seed-tooltip").classList.remove("show");
+  }
+
+  let draggedCrop = null;
+  let touchGhost = null;
+
+  function onSeedTouchStart(e){
+    const card = e.currentTarget;
+    const cropKey = card.dataset.crop;
+    const afford = state.gold >= CROPS[cropKey].seedCost;
+    if(!afford){
+      toast(`Not enough gold for ${CROPS[cropKey].name} seed (costs ${CROPS[cropKey].seedCost}g).`, "bad");
+      return;
+    }
+    e.preventDefault();
+    draggedCrop = cropKey;
+    card.classList.add("dragging");
+
+    const tip = document.getElementById("seed-tooltip");
+    tip.innerHTML = tooltipText(cropKey);
+    tip.classList.add("show");
+
+    touchGhost = card.cloneNode(true);
+    touchGhost.style.position = "fixed";
+    touchGhost.style.pointerEvents = "none";
+    touchGhost.style.zIndex = "1500";
+    touchGhost.style.width = card.offsetWidth + "px";
+    touchGhost.style.opacity = "0.9";
+    document.body.appendChild(touchGhost);
+    moveGhost(e.touches[0]);
+
+    const onMove = (ev)=>{
+      ev.preventDefault();
+      moveGhost(ev.touches[0]);
+      positionTooltipAtTouch(ev.touches[0]);
+      const el = document.elementFromPoint(ev.touches[0].clientX, ev.touches[0].clientY);
+      const plot = el ? el.closest(".plot") : null;
+      document.querySelectorAll(".plot.drag-over").forEach(p=>{ if(p!==plot) p.classList.remove("drag-over"); });
+      if(plot && plot.dataset.status === "plowed"){
+        plot.classList.add("drag-over");
+      }
+    };
+    const onEnd = (ev)=>{
+      document.removeEventListener("touchmove", onMove);
+      document.removeEventListener("touchend", onEnd);
+      card.classList.remove("dragging");
+      tip.classList.remove("show");
+      if(touchGhost){ touchGhost.remove(); touchGhost = null; }
+      const touch = ev.changedTouches[0];
+      const el = document.elementFromPoint(touch.clientX, touch.clientY);
+      const plot = el ? el.closest(".plot") : null;
+      document.querySelectorAll(".plot.drag-over").forEach(p=>p.classList.remove("drag-over"));
+      if(plot && plot.dataset.status === "plowed"){
+        plantSeed(parseInt(plot.dataset.idx,10), draggedCrop);
+      }
+      draggedCrop = null;
+    };
+    document.addEventListener("touchmove", onMove, {passive:false});
+    document.addEventListener("touchend", onEnd);
+  }
+
+  function positionTooltipAtTouch(touch){
+    const tip = document.getElementById("seed-tooltip");
+    tip.style.top = (touch.clientY - tip.offsetHeight - 14) + "px";
+    tip.style.left = (touch.clientX - tip.offsetWidth/2) + "px";
+  }
+
+  function moveGhost(touch){
+    if(!touchGhost) return;
+    touchGhost.style.left = (touch.clientX - touchGhost.offsetWidth/2) + "px";
+    touchGhost.style.top = (touch.clientY - 20) + "px";
+  }
+
+  function onSeedDragStart(e){
+    const card = e.currentTarget;
+    const cropKey = card.dataset.crop;
+    const afford = state.gold >= CROPS[cropKey].seedCost;
+    if(!afford){
+      e.preventDefault();
+      toast(`Not enough gold for ${CROPS[cropKey].name} seed (costs ${CROPS[cropKey].seedCost}g).`, "bad");
+      return;
+    }
+    draggedCrop = cropKey;
+    card.classList.add("dragging");
+    e.dataTransfer.effectAllowed = "copy";
+    e.dataTransfer.setData("text/plain", cropKey);
+  }
+
+  function onSeedDragEnd(e){
+    e.currentTarget.classList.remove("dragging");
+    draggedCrop = null;
+    document.querySelectorAll(".plot.drag-over, .plot.drag-reject").forEach(el=>{
+      el.classList.remove("drag-over","drag-reject");
+    });
+  }
+
+  function wirePlotDropZones(){
+    document.querySelectorAll(".plot").forEach(el=>{
+      el.addEventListener("dragover", onPlotDragOver);
+      el.addEventListener("dragleave", onPlotDragLeave);
+      el.addEventListener("drop", onPlotDrop);
+    });
+  }
+
+  function onPlotDragOver(e){
+    const el = e.currentTarget;
+    if(el.dataset.status !== "plowed") return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "copy";
+    el.classList.add("drag-over");
+  }
+
+  function onPlotDragLeave(e){
+    e.currentTarget.classList.remove("drag-over","drag-reject");
+  }
+
+  function onPlotDrop(e){
+    const el = e.currentTarget;
+    el.classList.remove("drag-over","drag-reject");
+    if(el.dataset.status !== "plowed") return;
+    e.preventDefault();
+    const cropKey = e.dataTransfer.getData("text/plain") || draggedCrop;
+    if(!cropKey) return;
+    const idx = parseInt(el.dataset.idx, 10);
+    plantSeed(idx, cropKey);
+  }
+
+  function renderToolShop(){
+    const grid = document.getElementById("tool-shop-grid");
+    grid.innerHTML = "";
+    TOOLS.forEach(t=>{
+      const owned = state.tools.includes(t.id);
+      const div = document.createElement("div");
+      div.className = "shop-card";
+      div.innerHTML = `
+        <h3>${t.name}</h3>
+        ${owned?'<span class="owned-tag">Owned</span>':''}
+        <div class="desc">${t.desc}</div>
+        <div class="price">${t.cost}g</div>
+        <button ${owned||state.gold<t.cost?'disabled':''} onclick="Game.buyTool('${t.id}')">${owned?'Owned':'Buy'}</button>
+      `;
+      grid.appendChild(div);
+    });
+  }
+
+  function renderLevels(){
+    const wrap = document.getElementById("level-list");
+    wrap.innerHTML = "";
+    LEVELS.forEach(l=>{
+      const div = document.createElement("div");
+      div.className = "level-row" + (l.level===state.level ? " current" : "");
+      div.innerHTML = `
+        <div class="level-num">${l.level}</div>
+        <div class="level-info">
+          <b>${l.plots} plot${l.plots>1?'s':''} total</b>
+          ${l.reward}
+        </div>
+      `;
+      wrap.appendChild(div);
+    });
+  }
+
+  function renderBadges(){
+    const wrap = document.getElementById("badges-grid");
+    wrap.innerHTML = "";
+    BADGES.forEach(b=>{
+      const unlocked = state.badgesUnlocked.includes(b.id);
+      const div = document.createElement("div");
+      div.className = "badge" + (unlocked?" unlocked":"");
+      div.innerHTML = `
+        <div class="ic">${b.icon}</div>
+        <div class="nm">${b.name}</div>
+        <div class="ds">${unlocked ? b.desc : "???"}</div>
+      `;
+      wrap.appendChild(div);
+    });
+  }
+
+  /* ---------- NAV ---------- */
+
+  function setupNav(){
+    document.querySelectorAll(".nav-btn").forEach(btn=>{
+      btn.addEventListener("click", ()=>{
+        document.querySelectorAll(".nav-btn").forEach(b=>b.classList.remove("active"));
+        document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));
+        btn.classList.add("active");
+        document.getElementById("page-"+btn.dataset.page).classList.add("active");
+        updateSeedPanelVisibility();
+      });
+    });
+  }
+
+  function updateSeedPanelVisibility(){
+    const onFarmPage = document.getElementById("page-farm").classList.contains("active");
+    document.getElementById("seed-panel").classList.toggle("visible", onFarmPage);
+    if(onFarmPage) positionSeedPanel();
+  }
+
+  function positionSeedPanel(){
+    const app = document.querySelector(".app");
+    const nav = document.querySelector("nav");
+    const panel = document.getElementById("seed-panel");
+    const appRect = app.getBoundingClientRect();
+    const navRect = nav.getBoundingClientRect();
+    panel.style.left = (appRect.right - 40) + "px";
+    panel.style.top = navRect.bottom + "px";
+  }
+
+  /* ---------- PUBLIC API (for inline onclick handlers) ---------- */
+
+  window.Game = {
+    plow: plowPlot,
+    plant: plantSeed,
+    harvest: harvestPlot,
+    clearDead: clearDeadPlot,
+    sellAll: sellAll,
+    buyTool: buyTool,
+  };
+
+  /* ---------- INIT ---------- */
+
+  function init(){
+    load();
+    if(state.plots.length === 0) state.plots.push(emptyPlot());
+    setupNav();
+    document.getElementById("restart-btn").addEventListener("click", restartGame);
+    render();
+    updateSeedPanelVisibility();
+    window.addEventListener("resize", positionSeedPanel);
+    if(state.bankrupt && state.gold<=0 && totalInventoryCount()===0 && !anyCropsGrowing()){
+      showBankruptModal();
+    }
+    setInterval(tick, 1000);
+  }
+
+  init();
+
+})();
+</script>
+</body>
+</html>
